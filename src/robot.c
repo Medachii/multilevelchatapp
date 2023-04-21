@@ -4,6 +4,29 @@
 struct sockaddr_in serv_addr;
 struct sockaddr_in cli_addr;
 
+
+
+char *dialog(char* message)
+{
+    char* response = "";
+    if (strstr(message, "bonjour") != NULL)
+    {
+        //on ajoute à response le message de bienvenue
+        strcat(response, "Bonjour, je suis Wall-E.");
+    }
+    // si le message contient "comment vas-tu"
+    if (strstr(message, "comment vas-tu") != NULL)
+    {
+        strcat(response, " Je vais bien, merci");
+    }
+
+
+    return response;
+}
+
+
+
+
 int main()
 {
     int serverSocket;
@@ -79,7 +102,7 @@ int main()
         //TODO : Mettre les tests de message ici 
 
 
-        printf("Here is the message: %s \n",buffer);
+        printf("%s \n",dialog(buffer));
         n = write(dialogSocket,"I got your message",18);
         if (n < 0)
         {

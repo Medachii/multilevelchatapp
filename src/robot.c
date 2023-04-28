@@ -4,15 +4,13 @@
 struct sockaddr_in serv_addr;
 struct sockaddr_in cli_addr;
 
-
-
-char *dialog(char* message)
+char *dialog(char *message)
 {
-    char* response = "";
+    char *response = "";
     if (strstr(message, "bonjour") != NULL)
     {
-        //on ajoute à response le message de bienvenue
-        strcat(response, "Bonjour, je suis Wall-E.");
+        // on ajoute à response le message de bienvenue
+        sprintf(response, "%s,%s", response, "Bonjour, je suis Wall-E.");
     }
     // si le message contient "comment vas-tu"
     if (strstr(message, "comment vas-tu") != NULL)
@@ -20,21 +18,14 @@ char *dialog(char* message)
         strcat(response, " Je vais bien, merci");
     }
 
-
     return response;
 }
-
-
-
 
 int main()
 {
     int serverSocket;
     int dialogSocket;
     int clilen;
-
-
-
 
     if ((serverSocket = socket(PF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -47,8 +38,8 @@ int main()
     }
 
     /*
-    *Lier l'adresse locale à la socket
-    */
+     *Lier l'adresse locale à la socket
+     */
     memset(&serv_addr, 0, sizeof(serv_addr));
     serv_addr.sin_family = AF_INET;
     serv_addr.sin_addr.s_addr = htonl(INADDR_ANY);
@@ -76,7 +67,7 @@ int main()
 
     /*Création d'un socket de dialogue*/
     clilen = sizeof(cli_addr);
-    dialogSocket = accept(serverSocket,(struct sockaddr *)&cli_addr,(socklen_t *)&clilen);
+    dialogSocket = accept(serverSocket, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen);
     if (dialogSocket < 0)
     {
         perror("servecho : erreur accept\n");
@@ -87,36 +78,47 @@ int main()
         printf("Robot connecté\n");
     }
     /* On fait tourner indéfiniment le serveur*/
-    while(1)
+    while (1)
     {
         char buffer[256];
         int n;
-        bzero(buffer,256);
-        n = read(dialogSocket,buffer,255);
+        bzero(buffer, 256);
+        n = read(dialogSocket, buffer, 255);
         if (n < 0)
         {
             perror("ERROR reading from socket");
             exit(1);
         }
 
-        //TODO : Mettre les tests de message ici 
+        // TODO : Mettre les tests de message ici
+
+        /* printf("%s \n",dialog(buffer)); */
+
+        char str[80];
+        sprintf(str, "%s", "r");
+
+        if (strstr(str, "bonjour") != NULL)
+        {
+            printf("Ca sort");  //TODO ca rentre pas la dedans
+            // on ajoute à response le message de bienvenue
+            sprintf(str, "%s,%s", str, "Bonjour, je suis Wall-E.");
+        }
+        puts(str);
 
 
-        printf("%s \n",dialog(buffer));
-        n = write(dialogSocket,"I got your message",18);
+
+
+
+        n = write(dialogSocket, "I got your message", 18);
         if (n < 0)
         {
             perror("ERROR writing to socket");
             exit(1);
         }
     }
-    
-
 
     /*Fermeture de la socket de dialogue*/
     close(dialogSocket);
     /*Fermeture de la socket serveur*/
     close(serverSocket);
-
 }
-

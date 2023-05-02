@@ -6,9 +6,10 @@ struct sockaddr_in serv_addr;
 
 
 int main( int argc, char *argv[] ){
+    
     int sockfd;
     sockfd=socket(AF_INET,SOCK_STREAM,0);
-
+    int level = atoi(argv[3]);
 
     /*Remplir la structure serv_addr avec l'adresse du serveur*/
     bzero((char *)&serv_addr, sizeof(serv_addr));
@@ -22,7 +23,7 @@ int main( int argc, char *argv[] ){
     }
     else
     {
-        printf("Connected\n");
+        printf("[Level %d] : Connected\n", level);
     }
 
     /*Permettre d'écrire des messages indéfiniment jusqu'à fermeture de la connexion*/
@@ -31,8 +32,12 @@ int main( int argc, char *argv[] ){
     bzero(buffer,256);
     while(1)
     {
-        printf("Please enter the message: ");
+        printf("[Level %d] : Please enter the message: ", level);
         fgets(buffer,255,stdin);
+        size_t len = strlen(buffer);
+        memmove(buffer + 1, buffer, ++len);
+        *buffer = level+'0';
+        printf("Buffer : %s", buffer);
         n = write(sockfd,buffer,strlen(buffer));
         if (n < 0) {
             perror("ERROR writing to socket");

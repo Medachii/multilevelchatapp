@@ -6,19 +6,31 @@ struct sockaddr_in cli_addr;
 
 char *dialog(char *message)
 {
-    char *response = "";
+    char str[500] = "";
+    sprintf(str,"[Level %c]", message[0]);
+    message = message+1;
+    int flag = 0;
+    if (strstr(message, "exit") != NULL)
+        {
+            //close all program that run on port 2222
+            exit(1);
+        }
     if (strstr(message, "bonjour") != NULL)
     {
-        // on ajoute à response le message de bienvenue
-        sprintf(response, "%s,%s", response, "Bonjour, je suis Wall-E.");
+        flag++;
+        sprintf(str, "%s %s", str, " Bonjour, je suis Wall-E.");
     }
-    // si le message contient "comment vas-tu"
-    if (strstr(message, "comment vas-tu") != NULL)
+    if (strstr(message, "ca va") != NULL)
     {
-        strcat(response, " Je vais bien, merci");
+        flag++;
+        sprintf(str, "%s %s", str, " Ouai et toi bb ?");
+    }
+    if (flag == 0) {
+        /*TODO : Envoyer techniciens et/ou experts*/
+        sprintf(str, "%s %s", str, message);
     }
 
-    return response;
+    puts(str);
 }
 
 int main()
@@ -91,23 +103,8 @@ int main()
         }
 
         // TODO : Mettre les tests de message ici
-
-        /* printf("%s \n",dialog(buffer)); */
-
-        char str[80];
-        sprintf(str, "%s", "r");
-
-        if (strstr(str, "bonjour") != NULL)
-        {
-            printf("Ca sort");  //TODO ca rentre pas la dedans
-            // on ajoute à response le message de bienvenue
-            sprintf(str, "%s,%s", str, "Bonjour, je suis Wall-E.");
-        }
-        puts(str);
-
-
-
-
+        
+        dialog(buffer);
 
         n = write(dialogSocket, "I got your message", 18);
         if (n < 0)
@@ -115,6 +112,7 @@ int main()
             perror("ERROR writing to socket");
             exit(1);
         }
+
     }
 
     /*Fermeture de la socket de dialogue*/
@@ -122,3 +120,64 @@ int main()
     /*Fermeture de la socket serveur*/
     close(serverSocket);
 }
+
+
+
+
+/*
+
+int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+
+int opt = 1;
+setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+
+struct sockaddr_in server_address;
+server_address.sin_family = AF_INET;
+server_address.sin_addr.s_addr = INADDR_ANY;
+server_address.sin_port = htons(PORT);
+
+bind(server_socket, (struct sockaddr *)&server_address, sizeof(server_address));
+
+listen(server_socket, MAX_CLIENTS);
+
+int client_socket;
+struct sockaddr_in client_address;
+socklen_t client_address_len = sizeof(client_address);
+
+while ((client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_len)) >= 0) {
+    // gérer la connexion du client ici
+}
+
+
+// structure pour stocker les informations du client
+struct client_info {
+    int socket_id;
+    // autres informations sur le client
+};
+
+// tableau pour stocker les informations de tous les clients
+struct client_info clients[MAX_CLIENTS];
+
+// lorsqu'un nouveau client se connecte, stocker son identifiant de socket dans la structure clients
+int client_socket;
+struct sockaddr_in client_address;
+socklen_t client_address_len = sizeof(client_address);
+
+while ((client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_len)) >= 0) {
+    // trouver la première entrée libre dans le tableau clients
+    int i;
+    for (i = 0; i < MAX_CLIENTS; i++) {
+        if (clients[i].socket_id == -1) {
+            clients[i].socket_id = client_socket;
+            break;
+        }
+    }
+    // gérer la connexion du client ici
+}
+
+// pour envoyer un message à un client en particulier, utiliser la fonction send() avec l'identifiant de socket correspondant
+int client_id = 3; // exemple: envoyer un message au client d'indice 3
+char message[] = "Bonjour client 3!";
+send(clients[client_id].socket_id, message, strlen(message), 0);
+
+*/

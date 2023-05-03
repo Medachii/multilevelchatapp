@@ -31,12 +31,11 @@ char *dialog(char *message)
     if (flag == 0)
     {
         /*TODO : Envoyer techniciens et/ou experts*/
-        sprintf(str, "%s %s", str, message);
+        sprintf(str, "%s %s", str, "-1");
     }
 
     puts(str);
     return str;
-    
 }
 
 int main()
@@ -153,22 +152,51 @@ int main()
                 else
                 {
                     // Print message
-                    printf("Message from client %d: %s\n", clients[i].socket_id, buffer+1);
-
-                    char* response = dialog(buffer);
-                    write(clients[i].socket_id, response, strlen(response));
-
-                    // Send message to all clients
-                    /* for (int j = 0; j < client_count; j++)
+                    printf("Message from client %d: %s   %d\n", clients[i].socket_id, buffer + 1, clients[i].socket_connected);
+                    if (strcmp(buffer,"!1") == 0 || strcmp(buffer,"!2") == 0)
                     {
-                        if (clients[j].socket_id != clients[i].socket_id)
+                        printf("Ca rentre oui ou non ?\n");
+                        clients[i].level = buffer[1];
+                        clients[i].socket_connected = -1;
+                    }
+
+                    else if (clients[i].socket_connected != -1)
+                    {
+                        printf("Clients are speaking together\n");
+                        // send the message to the client connected
+                        write(clients[i].socket_connected, buffer+1, strlen(buffer+1));
+                        write(clients[i].socket_id, "\n", 1);
+                        
+                    }
+                    else
+                    {
+                        char *response = dialog(buffer);
+                        printf("Response : %s\n", response+10);
+                        if (strcmp((response+10), "-1") == 0)
                         {
-                            write(clients[j].socket_id, buffer, strlen(buffer));
+                            printf("Connection with a technician\n");
+                            // établir une connexion entre un client level 2 et le clients[i]
+                            for (int j = 0; j < client_count; j++)
+                            {
+                                if (clients[j].level == '2' && clients[j].socket_connected == -1 && clients[i].level == '1' && clients[i].socket_connected == -1)
+                                {
+                                    clients[j].socket_connected = clients[i].socket_id;
+                                    clients[i].socket_connected = clients[j].socket_id;
+                                    break;
+                                }
+                            }
+                            write(clients[i].socket_id, "You are connected with a technician\n", 36);
+                            write(clients[i].socket_connected, "You are connected with a client\n", 32);
                         }
-                    } */
-                    //on remet le client en attente
+                        else{
+                            write(clients[i].socket_id, response, strlen(response));
+                        }
+                        
+                    }
+
                     
-                    //reset buffer
+
+                    // reset buffer
                     bzero(buffer, 1024);
                 }
             }

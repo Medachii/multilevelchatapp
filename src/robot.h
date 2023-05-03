@@ -4,7 +4,7 @@
 struct client_info {
     int socket_id;
     int level;
-    
+    int socket_connected;
     // autres informations sur le client
 };
 

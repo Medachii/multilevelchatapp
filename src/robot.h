@@ -1,6 +1,12 @@
 #ifndef __ROBOT_H__
 #define __ROBOT_H__
 
+struct client_info {
+    int socket_id;
+    int level;
+    
+    // autres informations sur le client
+};
 
 #include <sys/types.h>
 #include <sys/socket.h>
@@ -14,6 +20,7 @@
 #include <unistd.h>
 #include <strings.h>
 #include <string.h>
+#include <sys/select.h>
 
 
 

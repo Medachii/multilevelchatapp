@@ -1,20 +1,23 @@
 #include "robot.h"
 
 #define SERV_PORT 2222
+#define MAX_CLIENTS 50
+#define FD_SETSIZE 1024
 struct sockaddr_in serv_addr;
 struct sockaddr_in cli_addr;
+struct client_info clients[MAX_CLIENTS];
 
 char *dialog(char *message)
 {
     char str[500] = "";
-    sprintf(str,"[Level %c]", message[0]);
-    message = message+1;
+    sprintf(str, "[Level %c]", message[0]);
+    message = message + 1;
     int flag = 0;
     if (strstr(message, "exit") != NULL)
-        {
-            //close all program that run on port 2222
-            exit(1);
-        }
+    {
+        // close all program that run on port 2222
+        exit(1);
+    }
     if (strstr(message, "bonjour") != NULL)
     {
         flag++;
@@ -25,19 +28,26 @@ char *dialog(char *message)
         flag++;
         sprintf(str, "%s %s", str, " Ouai et toi bb ?");
     }
-    if (flag == 0) {
+    if (flag == 0)
+    {
         /*TODO : Envoyer techniciens et/ou experts*/
         sprintf(str, "%s %s", str, message);
     }
 
     puts(str);
+    return str;
+    
 }
 
 int main()
 {
-    int serverSocket;
+    int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
     int dialogSocket;
-    int clilen;
+    socklen_t clilen;
+    int opt = 1;
+    int client_socket;
+    int client_count = 0;
+    fd_set read_fds;
 
     if ((serverSocket = socket(PF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -67,7 +77,7 @@ int main()
     }
 
     /* Paramétrer le nombre de connexion "pending" */
-    if (listen(serverSocket, 5) < 0)
+    if (listen(serverSocket, MAX_CLIENTS) < 0)
     {
         perror("servecho : erreur listen\n");
         exit(1);
@@ -79,72 +89,119 @@ int main()
 
     /*Création d'un socket de dialogue*/
     clilen = sizeof(cli_addr);
-    dialogSocket = accept(serverSocket, (struct sockaddr *)&cli_addr, (socklen_t *)&clilen);
-    if (dialogSocket < 0)
-    {
-        perror("servecho : erreur accept\n");
-        exit(1);
-    }
-    else
-    {
-        printf("Robot connecté\n");
-    }
-    /* On fait tourner indéfiniment le serveur*/
+
     while (1)
     {
-        char buffer[256];
-        int n;
-        bzero(buffer, 256);
-        n = read(dialogSocket, buffer, 255);
-        if (n < 0)
+        FD_ZERO(&read_fds);
+        FD_SET(serverSocket, &read_fds);
+
+        // Add client sockets to read set
+        for (int i = 0; i < client_count; i++)
         {
-            perror("ERROR reading from socket");
-            exit(1);
+            FD_SET(clients[i].socket_id, &read_fds);
         }
 
-        // TODO : Mettre les tests de message ici
-        
-        dialog(buffer);
-
-        n = write(dialogSocket, "I got your message", 18);
-        if (n < 0)
+        // Wait for activity on sockets
+        if (select(FD_SETSIZE, &read_fds, NULL, NULL, NULL) < 0)
         {
-            perror("ERROR writing to socket");
-            exit(1);
+            perror("Failed to select sockets");
+            exit(EXIT_FAILURE);
         }
 
+        // Check if server socket is ready for a new connection
+        if (FD_ISSET(serverSocket, &read_fds))
+        {
+            int cli_addr_len = sizeof(cli_addr);
+
+            // Accept new connection
+            clients[client_count].socket_id = accept(serverSocket, (struct sockaddr *)&cli_addr, (socklen_t *)&cli_addr_len);
+            if (clients[client_count].socket_id < 0)
+            {
+                perror("Failed to accept incoming connection");
+                exit(EXIT_FAILURE);
+            }
+
+            // Print client address
+            printf("New connection from %s:%d\n", inet_ntoa(cli_addr.sin_addr), ntohs(cli_addr.sin_port));
+
+            client_count++;
+        }
+        // define buffer
+        char buffer[1024];
+        bzero(buffer, 1024);
+
+        // Check if client sockets are ready for reading
+        for (int i = 0; i < client_count; i++)
+        {
+            if (FD_ISSET(clients[i].socket_id, &read_fds))
+            {
+                // Read data from client
+                int read_size = read(clients[i].socket_id, buffer, sizeof(buffer));
+                if (read_size <= 0)
+                {
+                    close(clients[i].socket_id);
+                    clients[i].socket_id = 0;
+                    // Remove client socket from list
+                    for (int j = i; j < client_count - 1; j++)
+                    {
+                        clients[j].socket_id = clients[j + 1].socket_id;
+                    }
+                    client_count--;
+
+                    printf("Client disconnected\n");
+                }
+                else
+                {
+                    // Print message
+                    printf("Message from client %d: %s\n", clients[i].socket_id, buffer+1);
+
+                    char* response = dialog(buffer);
+                    write(clients[i].socket_id, response, strlen(response));
+
+                    // Send message to all clients
+                    /* for (int j = 0; j < client_count; j++)
+                    {
+                        if (clients[j].socket_id != clients[i].socket_id)
+                        {
+                            write(clients[j].socket_id, buffer, strlen(buffer));
+                        }
+                    } */
+                    //on remet le client en attente
+                    
+                    //reset buffer
+                    bzero(buffer, 1024);
+                }
+            }
+        }
     }
-
     /*Fermeture de la socket de dialogue*/
-    close(dialogSocket);
+    close(client_socket);
     /*Fermeture de la socket serveur*/
     close(serverSocket);
+    return 0;
 }
-
-
-
 
 /*
 
-int server_socket = socket(AF_INET, SOCK_STREAM, 0);
+int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
 
 int opt = 1;
-setsockopt(server_socket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
+setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
 
 struct sockaddr_in server_address;
 server_address.sin_family = AF_INET;
 server_address.sin_addr.s_addr = INADDR_ANY;
 server_address.sin_port = htons(PORT);
 
-bind(server_socket, (struct sockaddr *)&server_address, sizeof(server_address));
+bind(serverSocket, (struct sockaddr *)&server_address, sizeof(server_address));
 
-listen(server_socket, MAX_CLIENTS);
+listen(serverSocket, MAX_CLIENTS);
 
 int client_socket;
-struct sockaddr_in client_address;
-socklen_t client_address_len = sizeof(client_address);
+struct sockaddr_in cli_address;
+socklen_t cli_address_len = sizeof(cli_address);
 
-while ((client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_len)) >= 0) {
+while ((client_socket = accept(serverSocket, (struct sockaddr *)&cli_address, &cli_address_len)) >= 0) {
     // gérer la connexion du client ici
 }
 
@@ -160,10 +217,10 @@ struct client_info clients[MAX_CLIENTS];
 
 // lorsqu'un nouveau client se connecte, stocker son identifiant de socket dans la structure clients
 int client_socket;
-struct sockaddr_in client_address;
-socklen_t client_address_len = sizeof(client_address);
+struct sockaddr_in cli_address;
+socklen_t cli_address_len = sizeof(cli_address);
 
-while ((client_socket = accept(server_socket, (struct sockaddr *)&client_address, &client_address_len)) >= 0) {
+while ((client_socket = accept(serverSocket, (struct sockaddr *)&cli_address, &cli_address_len)) >= 0) {
     // trouver la première entrée libre dans le tableau clients
     int i;
     for (i = 0; i < MAX_CLIENTS; i++) {

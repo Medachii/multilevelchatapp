@@ -176,6 +176,7 @@ int main()
                         printf("Response : %s\n", response+10);
                         if (strcmp((response+10), "-1") == 0) //Condition pour passer au niveau au-dessus
                         {
+                            int changed = 0;
                             printf("Connection with a technician\n");
                             // établir une connexion entre un client level 2 et le clients[i]
                             for (int j = 0; j < client_count; j++)
@@ -184,11 +185,18 @@ int main()
                                 {
                                     clients[j].socket_connected = clients[i].socket_id;
                                     clients[i].socket_connected = clients[j].socket_id;
+                                    changed = 1;
                                     break;
                                 }
                             }
-                            write(clients[i].socket_id, "You are connected with a technician\n", 36);
-                            write(clients[i].socket_connected, "You are connected with a client\n", 32);
+                            if (changed == 0)
+                            {
+                                write(clients[i].socket_id, "No technician available\n", 24);
+                            }
+                            else{
+                                write(clients[i].socket_id, "You are connected with a technician\n", 36);
+                                write(clients[i].socket_connected, "You are connected with a client\n", 32);
+                            }
                         }
                         else{
                             write(clients[i].socket_id, response, strlen(response));

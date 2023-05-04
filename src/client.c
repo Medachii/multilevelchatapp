@@ -5,7 +5,10 @@ struct sockaddr_in serv_addr;
 
 int main(int argc, char *argv[])
 {
-
+    if (argc < 4) {
+        printf("Usage : %s <ip> <port> <level>\n", argv[0]);
+        exit(1);
+    }
     int sockfd;
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
     int level = atoi(argv[3]);

@@ -132,7 +132,7 @@ int main()
         // Check if client sockets are ready for reading
         for (int i = 0; i < client_count; i++)
         {
-            if (FD_ISSET(clients[i].socket_id, &read_fds))
+            if (FD_ISSET(clients[i].socket_id, &read_fds)) // if the socket is ready
             {
                 // Read data from client
                 int read_size = read(clients[i].socket_id, buffer, sizeof(buffer));
@@ -153,7 +153,7 @@ int main()
                 {
                     // Print message
                     printf("Message from client %d: %s   %d\n", clients[i].socket_id, buffer + 1, clients[i].socket_connected);
-                    if (strcmp(buffer,"!1") == 0 || strcmp(buffer,"!2") == 0)
+                    if (strcmp(buffer,"!1") == 0 || strcmp(buffer,"!2") == 0) //Quand le client se connecte, il envoie ce message au serveur
                     {
                         printf("Ca rentre oui ou non ?\n");
                         clients[i].level = buffer[1];
@@ -166,13 +166,15 @@ int main()
                         // send the message to the client connected
                         write(clients[i].socket_connected, buffer+1, strlen(buffer+1));
                         write(clients[i].socket_id, "\n", 1);
+
+                        //TODO : ICI LA CONNEXION AVEC UN EXPERT, SI LE TECH ENVOIE "expert"
                         
                     }
                     else
                     {
                         char *response = dialog(buffer);
                         printf("Response : %s\n", response+10);
-                        if (strcmp((response+10), "-1") == 0)
+                        if (strcmp((response+10), "-1") == 0) //Condition pour passer au niveau au-dessus
                         {
                             printf("Connection with a technician\n");
                             // établir une connexion entre un client level 2 et le clients[i]

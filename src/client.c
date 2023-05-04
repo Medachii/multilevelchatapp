@@ -77,16 +77,16 @@ int main(int argc, char *argv[])
                 perror("ERROR reading from socket");
                 exit(1);
             }
-            printf("Ceci est le message : %s \n", buffer);
+            printf("Ceci est le message : %s \n", buffer); //message de la personne avec qui ce client est connecté
         }
-        if (FD_ISSET(STDIN_FILENO, &readfds)) // si le stdin est prêt à être lu
+        if (FD_ISSET(STDIN_FILENO, &readfds)) // si le stdin est prêt à être lu, c'est ce client qui parle
         {
             printf("[Level %d] : Please enter the message: ", level);
             fgets(buffer, 255, stdin);
 
             size_t len = strlen(buffer);
-            memmove(buffer + 1, buffer, ++len);
-            *buffer = level + '0';
+            memmove(buffer + 1, buffer, ++len); // ça rajoute un caractère au début du buffer
+            *buffer = level + '0'; // on met le niveau du client au début du buffer
             // printf("Buffer : %s", buffer);
             n = write(sockfd, buffer, strlen(buffer));
             if (n < 0)

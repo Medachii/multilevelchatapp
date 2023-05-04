@@ -16,6 +16,7 @@ char *dialog(char *message)
     if (strstr(message, "exit") != NULL)
     {
         // close all program that run on port 2222
+        //TODO : Modifier ça, ça boucle à l'infini quand on écrit exit
         exit(1);
     }
     if (strstr(message, "bonjour") != NULL)
@@ -28,6 +29,20 @@ char *dialog(char *message)
         flag++;
         sprintf(str, "%s %s", str, " Ouai et toi bb ?");
     }
+
+    /*
+    if (flag == 0)
+    {
+        
+        sprintf(str, "%s %s", str, "-1");
+        puts(str);
+        return str;
+    } else {
+        sprintf(str, "%s %s\n", "Voici la réponse : ", str);
+        sprintf(str, "%s %s", str, "Votre message : ");
+        puts(str);
+        return str;
+    }*/
     if (flag == 0)
     {
         /*TODO : Envoyer techniciens et/ou experts*/

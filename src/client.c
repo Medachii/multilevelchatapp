@@ -32,7 +32,7 @@ int main(int argc, char *argv[])
         sprintf(str, "!%d", level);
         printf("Sending : %s\n", str);
         send(sockfd, str, sizeof(str), 0);
-        printf("[Level %d] : Please enter the message : \n", level);
+        //printf("[Level %d] : Please enter the message : \n", level);
     }
 
     /*Permettre d'écrire des messages indéfiniment jusqu'à fermeture de la connexion*/
@@ -75,7 +75,7 @@ int main(int argc, char *argv[])
         if (FD_ISSET(STDIN_FILENO, &readfds)) // si le stdin est prêt à être lu, c'est ce client qui parle
         {
             //TODO : Ce n'est pas au client de dire ça, si ? On pourrait faire en sorte que le serveur affiche les "Please enter the message" et "Voici la réponse" pour contrôler l'ordre
-            printf("[Level %d] : Please enter the message: \n", level);
+            
             fgets(buffer, 255, stdin);
 
             size_t len = strlen(buffer);
@@ -98,7 +98,7 @@ int main(int argc, char *argv[])
                 perror("ERROR reading from socket");
                 exit(1);
             }
-            printf("Ceci est la réponse : %s \n", buffer); //message de la personne avec qui ce client est connecté
+            printf("%s \n", buffer); //message de la personne avec qui ce client est connecté
         }
         
     }

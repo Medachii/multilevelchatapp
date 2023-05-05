@@ -1,10 +1,13 @@
 #ifndef __ROBOT_H__
 #define __ROBOT_H__
-
+#define SERV_PORT 2222
+#define MAX_CLIENTS 50
 struct client_info {
     int socket_id;
     int level;
     int socket_connected;
+    int socket_contacted[MAX_CLIENTS];
+    int number_contacted;
     // autres informations sur le client
 };
 

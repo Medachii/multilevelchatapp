@@ -1,0 +1,21 @@
+Explications sur le fonctionnement de l'application :
+
+Il est possible de make robot ou make client pour mettre à jour les 2 programmes.
+
+Pour démarrer le serveur, il suffit de lancer ./robot, qui se trouve dans src.
+
+Les clients sont classés en 3 catégories : 
+Un client de niveau 1 est un client de base.
+Un client de niveau 2 est un technicien.
+Un client de niveau 3 est un expert.
+
+Pour lancer un client de niveau n, il faut lancer ./client <ip> <port> <n>. Pour nous, le port est à 2222.
+
+En se connectant, un client parle au serveur. Un client de niveau 1 dont la demande est infructueuse est redirigé vers un technicien, s'il en existe un dans la liste des clients connectés du serveur. Le technicien peut rediriger un client de niveau 1 vers un expert en écrivant le mot expert dans un message. Les clients technicien et expert ne peuvent parler qu'au serveur ou au client de niveau 1 à qui ils sont connectés.
+
+Si un client envoie "leave" dans un message à un technicien/client, il est reconnecté au robot.
+Le robot accepte les mots "bonjour", "ça va", "client", "technicien", "expert", "totech", "toexp", "commandes", toute autre demande sera considérée infructueuse et le client de niveau 1 sera redirigé vers un technicien.
+
+
+Nous avons fait le choix de ne contacter qu'un technicien/expert à la fois, au lieu de plusieurs d'un coup. Si nous avions voulu faire ceci, nous aurions pu transformer dans notre structure de données le champ "int socket_connected" en un tableau d'entiers. Pour changer de technicien/expert, le technicien/expert doit écrire le mot "switch" dans un message. Si aucun autre technicien/expert n'est présent, il reste connecté au client. Sinon, le client devient connecté au nouveau technicien/expert.
+

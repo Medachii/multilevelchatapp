@@ -168,7 +168,7 @@ int main()
                 {
                     // Print message
                     printf("Message from client %d: %s   %d\n", clients[i].socket_id, buffer + 1, clients[i].socket_connected);
-                    if (strcmp(buffer,"!1") == 0 || strcmp(buffer,"!2") == 0) //Quand le client se connecte, il envoie ce message au serveur
+                    if (strcmp(buffer,"!1") == 0 || strcmp(buffer,"!2") == 0 || strcmp(buffer, "!3") == 0) //Quand le client se connecte, il envoie ce message au serveur
                     {
                         printf("Ca rentre oui ou non ?\n");
                         clients[i].level = buffer[1];
@@ -179,11 +179,48 @@ int main()
                     {
                         printf("Clients are speaking together\n");
                         // send the message to the client connected
-                        write(clients[i].socket_connected, buffer+1, strlen(buffer+1));
-                        write(clients[i].socket_id, "\n", 1);
 
-                        //TODO : ICI LA CONNEXION AVEC UN EXPERT, SI LE TECH ENVOIE "expert"
-                        
+                        if (strstr(buffer, "expert") != NULL  && clients[i].level == '2') {
+                            //TODO : ICI LA CONNEXION AVEC UN EXPERT, SI LE TECH ENVOIE "expert"
+                            //On trouve le client du techincien
+                            //C'est socket_connected
+                            int index_client = -1;
+                            for (int j = 0; j < client_count; j++) {
+                                if (clients[j].socket_id == clients[i].socket_connected) {
+                                    //On a trouvé le client
+                                    printf("OUI");
+                                    index_client = j;
+                                }
+                            }
+                            if (index_client == -1) {
+                                perror("Client n'existe pas");
+                                exit(1);
+                            }
+
+                            //On connecte le client à un expert si possible
+                            int found = 0;
+                            for (int j = 0; j < client_count; j++) {
+                                if(clients[j].level == '3' && clients[index_client].level == '1' && clients[j].socket_connected == -1) {
+                                    found = 1;
+                                    clients[j].socket_connected = clients[index_client].socket_id;
+                                    clients[index_client].socket_connected = clients[j].socket_id;
+                                    write(clients[index_client].socket_id, "You are connected with an expert.\n", 36);
+                                    write(clients[j].socket_id, "You are connected with a client.\n", 32);
+                                    write(clients[i].socket_id, "You have been disconnected from the client.\n", 43);
+                                    clients[i].socket_connected = -1;
+                                    break;
+                                }
+                            }
+                            if (found == 0)
+                            {
+                                write(clients[i].socket_id, "No expert available.\n", 24);
+                            }
+                            
+                        } else { //Si le client envoie un message normal
+                            write(clients[i].socket_connected, buffer+1, strlen(buffer+1));
+                            write(clients[i].socket_id, "\n", 1);
+                        }
+                     
                     }
                     else
                     {
@@ -191,7 +228,7 @@ int main()
                         printf("Response : %s\n", response+10);
                         if (strcmp((response+10), "-1") == 0) //Condition pour passer au niveau au-dessus
                         {
-                            int changed = 0;
+                            int found = 0;
                             printf("Connection with a technician\n");
                             // établir une connexion entre un client level 2 et le clients[i]
                             for (int j = 0; j < client_count; j++)
@@ -200,11 +237,11 @@ int main()
                                 {
                                     clients[j].socket_connected = clients[i].socket_id;
                                     clients[i].socket_connected = clients[j].socket_id;
-                                    changed = 1;
+                                    found = 1;
                                     break;
                                 }
                             }
-                            if (changed == 0)
+                            if (found == 0)
                             {
                                 write(clients[i].socket_id, "No technician available\n", 24);
                             }

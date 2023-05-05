@@ -27,10 +27,8 @@ int main(int argc, char *argv[])
     }
     else
     {
-        printf("[Level %d] : Connected\n", level);
         char *str = malloc(sizeof(char *));
         sprintf(str, "!%d", level);
-        printf("Sending : %s\n", str);
         send(sockfd, str, sizeof(str), 0);
         //printf("[Level %d] : Please enter the message : \n", level);
     }

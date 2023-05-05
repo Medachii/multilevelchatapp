@@ -1,63 +1,80 @@
 #include "robot.h"
 
-#define SERV_PORT 2222
-#define MAX_CLIENTS 50
-#define FD_SETSIZE 1024
+
 struct sockaddr_in serv_addr;
 struct sockaddr_in cli_addr;
 struct client_info clients[MAX_CLIENTS];
 
 char *dialog(char *message)
 {
-    char str[500] = "";
-    //message = message + 1;
+    char* str=calloc(2048, sizeof(char));
+    // message = message + 1;
     int flag = 0;
-    if (strstr(message, "exit") != NULL)
-    {
-        // close all program that run on port 2222
-        //TODO : Modifier ça, ça boucle à l'infini quand on écrit exit
-        exit(1);
-    }
     if (strstr(message, "bonjour") != NULL)
     {
         flag++;
-        sprintf(str, "%s %s", str, " Bonjour, je suis votre robot d'assistance");
+        sprintf(str, "%s %s", str, " Bonjour, je suis votre robot d'assistance.");
     }
     if (strstr(message, "ça va") != NULL)
     {
         flag++;
-        sprintf(str, "%s %s", str, " Je vais bien, merci de demander");
+        sprintf(str, "%s %s", str, " Je vais bien, merci de demander.");
     }
-
-    /*
-    if (flag == 0)
+    if (strstr(message, "client")!= NULL)
     {
-        
+        flag++;
+        sprintf(str, "%s %s", str, " Pour créer un nouveau client, entrez dans un terminal la commande : \"./client <ip> 2222 1\".");
+    }
+    if (strstr(message,"technicien")!= NULL)
+    {
+        flag++;
+        sprintf(str, "%s %s", str, " Pour créer un nouveau technicien, entrez dans un terminal la commande : \"./client <ip> 2222 2\".");
+    }
+    if (strstr(message,"expert")!= NULL)
+    {
+        flag++;
+        sprintf(str, "%s %s", str, " Pour créer un nouveau expert, entrez dans un terminal la commande : \"./client <ip> 2222 3\".");
+    }
+    if (strstr(message,"commandes")!=NULL){
+        flag++;
+        sprintf(str, "%s %s", str, " Voici la liste des commandes disponibles : \n - \"bonjour\" : le robot vous répondra par un message de bienvenue. \n - \"ça va\" : le robot vous répondra par un message de bien-être. \n - \"client\" : le robot vous expliquera comment créer un nouveau client. \n - \"technicien\" : le robot vous expliquera comment créer un nouveau technicien. \n - \"expert\" : le robot vous expliquera comment créer un nouveau expert. \n - \"totech\" : le robot vous mettra en contact avec un technicien. \n - \"toexp\" : le robot vous mettra en contact avec un expert. \n - \"commandes\" : le robot vous affichera la liste des commandes disponibles.");
+    }
+    if (strstr(message,"totech")!=NULL)
+    {
+        flag++;
         sprintf(str, "%s %s", str, "-1");
-        puts(str);
-        return str;
-    } else {
-        sprintf(str, "%s %s\n", "Voici la réponse : ", str);
-        sprintf(str, "%s %s", str, "Votre message : ");
-        puts(str);
-        return str;
-    }*/
+    }
+    if (strstr(message,"toexp")!=NULL)
+    {
+        flag++;
+        sprintf(str, "%s %s", str, "Veuillez d'abord passer par un technicien avant de contacter un expert, vous pouvez utiliser la commande \"totech\".");
+    }
     if (flag == 0)
     {
         /*TODO : Envoyer techniciens et/ou experts*/
         sprintf(str, "%s %s", str, "-1");
     }
 
-    puts(str);
+    //puts(str);
     return str;
+}
+
+int isInArray(int socket, int contacted_socket[])
+{
+    int i;
+    for (i = 0; i < MAX_CLIENTS; i++)
+    {
+        if (contacted_socket[i] == socket)
+        {
+            return 1;
+        }
+    }
+    return 0;
 }
 
 int main()
 {
     int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-    int dialogSocket;
-    socklen_t clilen;
-    int opt = 1;
     int client_socket;
     int client_count = 0;
     fd_set read_fds;
@@ -100,8 +117,7 @@ int main()
         printf("Listening\n");
     }
 
-    /*Création d'un socket de dialogue*/
-    clilen = sizeof(cli_addr);
+    
 
     while (1)
     {
@@ -166,12 +182,13 @@ int main()
                 else
                 {
                     // Print message
-                    printf("Message from client %d: %s   %d\n", clients[i].socket_id, buffer + 1, clients[i].socket_connected);
-                    if (strcmp(buffer,"!1") == 0 || strcmp(buffer,"!2") == 0 || strcmp(buffer, "!3") == 0) //Quand le client se connecte, il envoie ce message au serveur
+                    // printf("Message from client %d: %s   %d\n", clients[i].socket_id, buffer + 1, clients[i].socket_connected);
+                    if (strcmp(buffer, "!1") == 0 || strcmp(buffer, "!2") == 0 || strcmp(buffer, "!3") == 0) // Quand le client se connecte, il envoie ce message au serveur
                     {
-                        
+
                         clients[i].level = buffer[1];
                         clients[i].socket_connected = -1;
+                        clients[i].number_contacted = 0;
                     }
 
                     else if (clients[i].socket_connected != -1)
@@ -179,90 +196,152 @@ int main()
                         printf("Clients are speaking together\n");
                         // send the message to the client connected
 
-                        if (strstr(buffer, "expert") != NULL  && clients[i].level == '2') {
-                            //TODO : ICI LA CONNEXION AVEC UN EXPERT, SI LE TECH ENVOIE "expert"
-                            //On trouve le client du techincien
-                            //C'est socket_connected
+                        if (strstr(buffer, "leave") != NULL)
+                        {
+                            for (int j = 0; j < client_count; j++)
+                            {
+                                if (clients[j].socket_id == clients[i].socket_connected)
+                                {
+                                    if (clients[i].level == '1')
+                                    {
+                                        memset(&clients[i].socket_contacted, 0, sizeof(clients[i].socket_contacted));
+                                        clients[i].number_contacted = 0;
+                                    }
+                                    else{
+                                        memset(&clients[j].socket_contacted, 0, sizeof(clients[j].socket_contacted));
+                                        clients[j].number_contacted = 0;
+                                    }
+
+                                    clients[j].socket_connected = -1;
+                                    write(clients[j].socket_id, "\n\033[31;01m/!\\ Your contact left the chat.\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\n\033[31;01m/!\\ Your contact left the chat.\033[00m\n\n\033[36;01mVous :\033[00m"));
+                                    break;
+                                }
+                            }
+
+                            clients[i].socket_connected = -1;
+                            write(clients[i].socket_id, "\n\033[31;01m/!\\ You have been disconnected from your contact.\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\n\033[31;01m/!\\ You have been disconnected from your contact.\033[00m\n\n\033[36;01mVous :\033[00m"));
+                        }
+
+                        else if (strstr(buffer, "switch") != NULL && clients[i].level != '1')
+                        { // i : tech/expert, j : client, k: recherche de expert/tech
+                            for (int j = 0; j < client_count; j++)
+                            {
+                                if (clients[j].socket_id == clients[i].socket_connected)
+                                {
+                                    int found = 0;
+                                    for (int k = 0; k < client_count; k++)
+                                    {
+                                        if (!isInArray(clients[k].socket_id, clients[j].socket_contacted) && clients[k].socket_connected == -1 && clients[k].level == clients[i].level)
+                                        {
+                                            clients[j].socket_connected = clients[k].socket_id;
+                                            clients[k].socket_connected = clients[j].socket_id;
+                                            clients[j].socket_contacted[clients[j].number_contacted] = clients[k].socket_id;
+                                            clients[j].number_contacted++;
+                                            clients[i].socket_connected = -1;
+
+                                            write(clients[j].socket_id, "\n\033[31;01m/!\\ You have switched to another contact.\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\n\033[31;01m/!\\ You have switched to another contact.\033[00m\n\n\033[36;01mVous :\033[00m"));
+                                            write(clients[i].socket_id, "\n\033[31;01m/!\\ You have been switched out.\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\n\033[31;01m/!\\ You have been switched out.\033[00m\n\n\033[36;01mVous :\033[00m"));
+                                            write(clients[k].socket_id, "\n\033[32;01mYou have been connected to a client.\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\n\033[32;01mYou have been connected to a client.\033[00m\n\n\033[36;01mVous :\033[00m"));
+
+                                            break;
+                                        }
+                                    }
+                                    if (found == 0)
+                                    {
+                                        write(clients[i].socket_id, "\n\033[31;01m/!\\ No new contact available.\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\n\033[31;01m/!\\ No new contact available.\033[00m\n\n\033[36;01mVous :\033[00m"));
+                                    }
+
+                                    break;
+                                }
+                            }
+                        }
+
+                        else if (strstr(buffer, "expert") != NULL && clients[i].level == '2')
+                        {
                             int index_client = -1;
-                            for (int j = 0; j < client_count; j++) {
-                                if (clients[j].socket_id == clients[i].socket_connected) {
-                                    //On a trouvé le client
-                                    printf("OUI");
+                            for (int j = 0; j < client_count; j++)
+                            {
+                                if (clients[j].socket_id == clients[i].socket_connected)
+                                {
                                     index_client = j;
                                 }
                             }
-                            if (index_client == -1) {
+                            if (index_client == -1)
+                            {
                                 perror("Client n'existe pas");
                                 exit(1);
                             }
 
-                            //On connecte le client à un expert si possible
+                            // On connecte le client à un expert si possible
                             int found = 0;
-                            for (int j = 0; j < client_count; j++) {
-                                if(clients[j].level == '3' && clients[index_client].level == '1' && clients[j].socket_connected == -1) {
+                            for (int j = 0; j < client_count; j++)
+                            {
+                                if (clients[j].level == '3' && clients[index_client].level == '1' && clients[j].socket_connected == -1)
+                                {
                                     found = 1;
                                     clients[j].socket_connected = clients[index_client].socket_id;
                                     clients[index_client].socket_connected = clients[j].socket_id;
                                     char lastresponse[255];
+                                    clients[index_client].socket_contacted[clients[index_client].number_contacted] = clients[j].socket_id;
+                                    clients[index_client].number_contacted++;
 
-                                    strcpy(lastresponse, "\n\nTechnicien :\n");
-                                    strcat(lastresponse, buffer+1);
+                                    strcpy(lastresponse, "\n\n\033[34;01mTechnicien :\033[00m\n");
+                                    strcat(lastresponse, buffer + 1);
                                     write(clients[index_client].socket_id, lastresponse, sizeof(lastresponse));
-                                    write(clients[index_client].socket_id, "You are connected with an expert.\n\nVous :", sizeof("You are connected with an expert.\n\nVous :"));
-                                    write(clients[j].socket_id, "You are connected with a client.\n\nVous :", sizeof("You are connected with a client.\n\nVous :"));
-                                    write(clients[i].socket_id, "You have been disconnected from the client.\n\nVous :", sizeof("You have been disconnected from the client.\n\nVous :"));
+                                    write(clients[index_client].socket_id, "\033[32;01mYou are connected with an expert.\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\033[32;01mYou are connected with an expert.\033[00m\n\n\033[36;01mVous :\033[00m"));
+                                    write(clients[j].socket_id, "\033[32;01mYou are connected with a client.\033[00m\n\nVous :\033[00m", sizeof("\033[32;01mYou are connected with a client.\033[00m\n\nVous :\033[00m"));
+                                    write(clients[i].socket_id, "\033[31;01m/!\\ You have been disconnected from the client.\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\033[31;01m/!\\ You have been disconnected from the client.\033[00m\n\n\033[36;01mVous :\033[00m"));
                                     clients[i].socket_connected = -1;
                                     break;
                                 }
                             }
                             if (found == 0)
                             {
-                                write(clients[i].socket_id, "No expert available.\n", 24);
+                                write(clients[i].socket_id, "\033[31;01m/!\\ No expert available.\033[00m\n", sizeof("\033[31;01m/!\\ No expert available.\033[00m\n"));
                             }
-                            
-                        } else { //Si le client envoie un message normal
-                            char finalresponse[255], clientstatus[255], vous[255];
+                        }
+                        else
+                        { // Si le client envoie un message normal
+                            char finalresponse[2048], clientstatus[2048], vous[255];
                             if (clients[i].level == '1')
                             {
-                                strcpy(clientstatus, "\n\nClient :\n");
+                                strcpy(clientstatus, "\n\n\033[34;01mClient :\033[00m\n");
                                 strcat(finalresponse, clientstatus);
-                                strcat(finalresponse, buffer+1);
-                              
+                                strcat(finalresponse, buffer + 1);
                             }
-                            else if(clients[i].level == '2')
+                            else if (clients[i].level == '2')
                             {
-                                strcpy(clientstatus, "\n\nTechnicien :\n");
+                                strcpy(clientstatus, "\n\n\033[34;01mTechnicien :\033[00m\n");
                                 strcat(finalresponse, clientstatus);
-                                strcat(finalresponse, buffer+1);
+                                strcat(finalresponse, buffer + 1);
                             }
-                            else if(clients[i].level == '3')
+                            else if (clients[i].level == '3')
                             {
-                                strcpy(clientstatus, "\n\nExpert :\n");
+                                strcpy(clientstatus, "\n\n\033[34;01mExpert :\033[00m\n");
                                 strcat(finalresponse, clientstatus);
-                                strcat(finalresponse, buffer+1);
+                                strcat(finalresponse, buffer + 1);
                             }
-                            else{
+                            else
+                            {
                                 perror("Apagnan");
                                 exit(1);
                             }
-                            
-                            strcpy(vous, "\n\nVous :");
+
+                            strcpy(vous, "\n\n\033[36;01mVous :\033[00m");
                             strcat(finalresponse, vous);
                             write(clients[i].socket_connected, finalresponse, strlen(finalresponse));
-                            write(clients[i].socket_id, "\nVous :", sizeof("\nVous :"));
-                            //reinitiliser finalresponse vous et clientstatus
+                            write(clients[i].socket_id, "\n\033[36;01mVous :\033[00m", sizeof("\n\033[36;01mVous :\033[00m"));
+                            // reinitiliser finalresponse vous et clientstatus
                             strcpy(finalresponse, "");
                             strcpy(vous, "");
                             strcpy(clientstatus, "");
-
                         }
-                     
                     }
                     else
                     {
                         char *response = dialog(buffer);
                         printf("response : %s\n", response);
-                        if (strcmp((response), " -1") == 0) //Condition pour passer au niveau au-dessus
+                        if (strcmp((response), " -1") == 0 && clients[i].level == '1') // Condition pour passer au niveau au-dessus
                         {
                             int found = 0;
                             printf("Connection with a technician\n");
@@ -279,26 +358,28 @@ int main()
                             }
                             if (found == 0)
                             {
-                                write(clients[i].socket_id, "No technician available\n", 24);
+                                write(clients[i].socket_id, "\033[31;01m/!\\ No technician available\033[00m\n", sizeof("\033[31;01m/!\\ No technician available\033[00m\n"));
                             }
-                            else{
-                                write(clients[i].socket_id, "You are connected with a technician\n\nVous :", sizeof("You are connected with a technician\n\nVous :"));
-                                write(clients[i].socket_connected, "You are connected with a client\n\nVous :", sizeof("You are connected with a client\n\nVous :"));
+                            else
+                            {
+                                clients[i].socket_contacted[clients[i].number_contacted] = clients[i].socket_connected;
+                                clients[i].number_contacted++;
+                                write(clients[i].socket_id, "\033[32;01mYou are connected with a technician\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\033[32;01mYou are connected with a technician\033[00m\n\n\033[36;01mVous :\033[00m"));
+                                write(clients[i].socket_connected, "\033[32;01mYou are connected with a client\033[00m\n\n\033[36;01mVous :\033[00m", sizeof("\033[32;01mYou are connected with a client\033[00m\n\n\033[36;01mVous :\033[00m"));
                             }
                         }
-                        else{
-                            
-                            char finalresponse[255], clientstatus[255];
-                            strcpy(finalresponse, "\nRobot :\n");
+                        else
+                        {
+
+                            char finalresponse[2048], clientstatus[2048];
+                            strcpy(finalresponse, "\n\033[35;01mRobot :\033[00m\n");
                             strcat(finalresponse, response);
-                            strcpy(clientstatus, "\n\nVous :");
+                            strcpy(clientstatus, "\n\n\033[36;01mVous :\033[00m");
                             strcat(finalresponse, clientstatus);
                             write(clients[i].socket_id, finalresponse, strlen(finalresponse));
                         }
-                        
+                        free(response);
                     }
-
-                    
 
                     // reset buffer
                     bzero(buffer, 1024);
@@ -312,61 +393,3 @@ int main()
     close(serverSocket);
     return 0;
 }
-
-/*
-
-int serverSocket = socket(AF_INET, SOCK_STREAM, 0);
-
-int opt = 1;
-setsockopt(serverSocket, SOL_SOCKET, SO_REUSEADDR | SO_REUSEPORT, &opt, sizeof(opt));
-
-struct sockaddr_in server_address;
-server_address.sin_family = AF_INET;
-server_address.sin_addr.s_addr = INADDR_ANY;
-server_address.sin_port = htons(PORT);
-
-bind(serverSocket, (struct sockaddr *)&server_address, sizeof(server_address));
-
-listen(serverSocket, MAX_CLIENTS);
-
-int client_socket;
-struct sockaddr_in cli_address;
-socklen_t cli_address_len = sizeof(cli_address);
-
-while ((client_socket = accept(serverSocket, (struct sockaddr *)&cli_address, &cli_address_len)) >= 0) {
-    // gérer la connexion du client ici
-}
-
-
-// structure pour stocker les informations du client
-struct client_info {
-    int socket_id;
-    // autres informations sur le client
-};
-
-// tableau pour stocker les informations de tous les clients
-struct client_info clients[MAX_CLIENTS];
-
-// lorsqu'un nouveau client se connecte, stocker son identifiant de socket dans la structure clients
-int client_socket;
-struct sockaddr_in cli_address;
-socklen_t cli_address_len = sizeof(cli_address);
-
-while ((client_socket = accept(serverSocket, (struct sockaddr *)&cli_address, &cli_address_len)) >= 0) {
-    // trouver la première entrée libre dans le tableau clients
-    int i;
-    for (i = 0; i < MAX_CLIENTS; i++) {
-        if (clients[i].socket_id == -1) {
-            clients[i].socket_id = client_socket;
-            break;
-        }
-    }
-    // gérer la connexion du client ici
-}
-
-// pour envoyer un message à un client en particulier, utiliser la fonction send() avec l'identifiant de socket correspondant
-int client_id = 3; // exemple: envoyer un message au client d'indice 3
-char message[] = "Bonjour client 3!";
-send(clients[client_id].socket_id, message, strlen(message), 0);
-
-*/
